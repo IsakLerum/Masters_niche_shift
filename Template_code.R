@@ -226,20 +226,67 @@ mod_invasive <- sdmINLASpatRandEff(occurence_grid_invasive, climate_grid_invasiv
 # Retrive model results
 obj_native <- readRDS(file = "sp_Native.rds")
 
-### 3.1.1 Mean occurrence probability map #########
-native_occurence_estimate <- as.data.frame(obj_native$spatialPredictions[1])
+### 3.2.1 distribution estimate, habitat estimate & uncertainty maps #########
 
-ggplot(native_occurence_estimate) +
-  geom_raster(aes(s1, s2, fill = meanEst)) +
+
+native_occurence_estimate <- as.data.frame(obj_native$spatialPredictions[1])
+summary(native_occurence_estimate)
+
+#distribution estimate
+x_nat <- ggplot(native_occurence_estimate) +
+  geom_tile(aes(s1, s2, fill = meanEst / max(native_occurence_estimate$meanEst))) +
   coord_sf() +
   scale_fill_viridis_c(
-    limits = c(0, 1), option = "magma",
-    begin = 0.12, end = 1, name = "Occurence probability"
+    limits = c(0, .16),
+    option = "magma",
+    begin = 0.12, end = 1, name = "Relative \noccurence \nprobability"
   ) +
   scale_x_continuous(expand = c(0, 0), limits = c(model_range_native[1], model_range_native[2])) +
   scale_y_continuous(expand = c(0, 0), limits = c(model_range_native[3], model_range_native[4])) +
-  labs(title = "Native occurrence prediction", x = NULL, y = NULL) +
-  theme_bw()
+  labs(title = "a) Native distribution estimate", x = NULL, y = NULL) +
+  theme(plot.margin=grid::unit(c(0,0,0,0), "mm"), panel.background = element_rect(fill = "lightblue"))
+x_nat
+
+native_suitability <- as.data.frame(obj_native$spatialPredictions[6]) |> 
+  mutate(meanPred = invLogit(meanClimatePred))
+summary(native_suitability)
+
+#habitat estimate
+y_nat <- ggplot(native_suitability) +
+  geom_tile(aes(s1, s2, fill = meanPred / max(native_suitability$meanPred))) +
+  coord_sf() +
+  scale_fill_viridis_c(
+    # limits = c(0, .001),
+    option = "magma",
+    begin = 0.12, end = 1, name = "Relative \nsuitability"
+  ) +
+  scale_x_continuous(expand = c(0, 0), limits = c(model_range_native[1], model_range_native[2])) +
+  scale_y_continuous(expand = c(0, 0), limits = c(model_range_native[3], model_range_native[4])) +
+  labs(title = "b) Native habitat estimate", x = NULL, y = NULL) +
+  theme(plot.margin=grid::unit(c(0,0,0,0), "mm"), panel.background = element_rect(fill = "lightblue"))
+y_nat
+
+native_uncertainty <- as.data.frame(obj_native$spatialPredictions[4])
+summary(native_uncertainty)
+
+#Uncertainty
+z_nat <-
+  ggplot(native_uncertainty) +
+  geom_tile(aes(s1, s2, fill = uncertaintyEst)) +
+  coord_sf() +
+  scale_fill_viridis_c(
+    limits = c(0, .1),
+    option = "magma",
+    begin = 0.12, end = 1, name = "95% Credible \ninterval width"
+  ) +
+  scale_x_continuous(expand = c(0, 0), limits = c(model_range_native[1], model_range_native[2])) +
+  scale_y_continuous(expand = c(0, 0), limits = c(model_range_native[3], model_range_native[4])) +
+  labs(title = "c) Native uncertainty", x = NULL, y = NULL) +
+  theme(plot.margin=grid::unit(c(0,0,2,0), "mm"), panel.background = element_rect(fill = "lightblue"))
+z_nat
+
+library(gridExtra)
+grid.arrange(x_nat, y_nat, z_nat, nrow = 3, padding = unit(0.2, "line"))
 
 
 ### 3.1.2 Spatial effect map #########
@@ -257,21 +304,37 @@ ggplot(native_spatial_effect, aes(s1, s2)) +
   labs(title = "Spatial effect in native range", x = NULL, y = NULL) +
   theme_bw()
 
-### 3.1.3 Predicted occurrence probability in an expanded range #########
-predict_native <- predictSD(obj_native, climate_extended_prediction_range, origClimateData = climate_grid_native)
-native_predicted_estimate <- as.data.frame(predict_native[1])
-
-ggplot(native_predicted_estimate, aes(s1, s2)) +
-  geom_raster(aes(fill = OccurrenceProb)) +
-  coord_sf() +
-  scale_fill_viridis_c(
-    limits = c(0, 1), option = "magma",
-    begin = 0.12, end = 1, name = "Suitability"
-  ) +
-  scale_x_continuous(expand = c(0, 0), limits = c(model_range_extended[1], model_range_extended[2])) +
-  scale_y_continuous(expand = c(0, 0), limits = c(model_range_extended[3], model_range_extended[4])) +
-  labs(title = "Native niche prediction", x = NULL, y = NULL) +
-  theme_bw()
+# ### 3.2.3 habitat estimate projected in native and invasive ranges  #########
+# predict_native_native <- predictSD(obj_native, climate_grid_native, origClimateData = climate_grid_native)
+# native_native_predicted_estimate <- as.data.frame(predict_native_native[1])
+# 
+# ggplot(native_native_predicted_estimate, aes(s1, s2)) +
+#   geom_tile(aes(fill = OccurrenceProb)) +
+#   coord_sf() +
+#   scale_fill_viridis_c(
+#     limits = c(0, 1), option = "magma",
+#     begin = 0.12, end = 1, name = "Suitability"
+#   ) +
+#   scale_x_continuous(expand = c(0, 0), limits = c(model_range_native[1], model_range_native[2])) +
+#   scale_y_continuous(expand = c(0, 0), limits = c(model_range_native[3], model_range_native[4])) +
+#   labs(title = "Native niche prediction in the native range", x = NULL, y = NULL) +
+#   theme_bw()
+# 
+# 
+# predict_native_invasive <- predictSD(obj_native, climate_grid_invasive, origClimateData = climate_grid_native)
+# native_invasive_predicted_estimate <- as.data.frame(predict_native_invasive[1])
+# 
+# ggplot(native_invasive_predicted_estimate, aes(s1, s2)) +
+#   geom_tile(aes(fill = OccurrenceProb)) +
+#   coord_sf() +
+#   scale_fill_viridis_c(
+#     limits = c(0, 1), option = "magma",
+#     begin = 0.12, end = 1, name = "Suitability"
+#   ) +
+#   scale_x_continuous(expand = c(0, 0), limits = c(model_range_invasive[1], model_range_invasive[2])) +
+#   scale_y_continuous(expand = c(0, 0), limits = c(model_range_invasive[3], model_range_invasive[4])) +
+#   labs(title = "Native niche prediction in the invasive range", x = NULL, y = NULL) +
+#   theme_bw()
 
 ### 3.1.4 Individual climate response curves ########
 # obj_native$responsePredictions contains each climate variable with the occurrence prediction (with upper and lower confidence interval) along the available climate gradient in the specified range
@@ -281,22 +344,10 @@ preds_native <- obj_native$responsePredictions
 # The function is available in the Joe_functions.R file.
 pars_native <- getPars(obj_native, climate_grid_native)
 
-
 # WARNING! The name after "preds_native$" will change depending on the original climate data,
 # make sure to check preds_native beforehand.
 # This function should be repeated for each climate variable
 map2(preds_native, clim_names, plot_response_curve)
-
-
-# Calculate standardized individual response curves
-# This functions standardises the area under the curve to better show the change across the gradient regardless of effect size. As such disregard the actual response values
-integral_native_bio5 <- calculate_integral_response_curve(
-  climate_grid_native, "wc2.1_30s_bio_5",
-  preds_native$wc2.1_30s_bio_5$covarVal,
-  pars_native
-)
-
-plot_integral_response_curve(integral_native_bio5, "Name of the climate variable")
 
 ### 3.1.5 AUC ########
 observations_native <- occurence_grid_native$occurrence
@@ -310,52 +361,113 @@ sp_AUC_native <- auc(roc_object_native)
 # Retrive model results
 obj_invasive <- readRDS(file = "sp_invasive.rds")
 
-### 3.2.1 Mean occurrence probability map #########
+### 3.2.1 distribution estimate, habitat estimate & uncertainty maps #########
 invasive_occurence_estimate <- as.data.frame(obj_invasive$spatialPredictions[1])
 
-ggplot(invasive_occurence_estimate) +
-  geom_raster(aes(s1, s2, fill = meanEst)) +
+#distribution estimate
+x_inv <-
+  ggplot(invasive_occurence_estimate) +
+  geom_tile(aes(s1, s2, fill = meanEst / max(invasive_occurence_estimate$meanEst))) +
   coord_sf() +
   scale_fill_viridis_c(
-    limits = c(0, 1), option = "magma",
-    begin = 0.12, end = 1, name = "Occurence probability"
-  ) +
-  scale_x_continuous(expand = c(0, 0), limits = c(model_range_invasive[1], model_range_invasive[2])) +
-  scale_y_continuous(expand = c(0, 0), limits = c(model_range_invasive[3], model_range_invasive[4])) +
-  labs(title = "invasive occurrence prediction", x = NULL, y = NULL) +
-  theme_bw()
-
-
-### 3.2.2 Spatial effect map #########
-invasive_spatial_effect <- as.data.frame(obj_invasive$spatialPredictions[7])
-
-ggplot(invasive_spatial_effect, aes(s1, s2)) +
-  geom_raster(aes(fill = meanSpatialPred)) +
-  scale_fill_viridis_c(
+    limits = c(0, 0.55),
     option = "magma",
-    end = 0.9, name = "Spatial effect"
+    begin = 0.12, end = 1, name = "Relative \noccurence \nprobability"
   ) +
   scale_x_continuous(expand = c(0, 0), limits = c(model_range_invasive[1], model_range_invasive[2])) +
   scale_y_continuous(expand = c(0, 0), limits = c(model_range_invasive[3], model_range_invasive[4])) +
-  coord_sf() +
-  labs(title = "Spatial effect in invasive range", x = NULL, y = NULL) +
-  theme_bw()
+  labs(title = "a) Invasive distribution estimate", x = NULL, y = NULL) +
+  theme(plot.margin=grid::unit(c(0,0,0,0), "mm"), panel.background = element_rect(fill = "lightblue"))
+x_inv
 
-### 3.2.3 Predicted occurrence probability in an expanded range #########
-predict_invasive <- predictSD(obj_invasive, climate_extended_prediction_range, origClimateData = climate_grid_invasive)
-invasive_predicted_estimate <- as.data.frame(predict_invasive[1])
+invasive_suitability <- as.data.frame(obj_invasive$spatialPredictions[6]) |> 
+  mutate(meanPred = invLogit(meanClimatePred))
+summary(invasive_suitability)
 
-ggplot(invasive_predicted_estimate, aes(s1, s2)) +
-  geom_raster(aes(fill = OccurrenceProb)) +
+#habitat estimate
+y_inv <- ggplot(invasive_suitability) +
+  geom_tile(aes(s1, s2, fill = meanPred / max(invasive_suitability$meanPred))) +
   coord_sf() +
   scale_fill_viridis_c(
-    limits = c(0, 1), option = "magma",
-    begin = 0.12, end = 1, name = "Suitability"
+    # limits = c(0, .01),
+    option = "magma",
+    begin = 0.12, end = 1, name = "Relative \nSuitability"
   ) +
-  scale_x_continuous(expand = c(0, 0), limits = c(model_range_extended[1], model_range_extended[2])) +
-  scale_y_continuous(expand = c(0, 0), limits = c(model_range_extended[3], model_range_extended[4])) +
-  labs(title = "invasive niche prediction", x = NULL, y = NULL) +
-  theme_bw()
+  scale_x_continuous(expand = c(0, 0), limits = c(model_range_invasive[1], model_range_invasive[2])) +
+  scale_y_continuous(expand = c(0, 0), limits = c(model_range_invasive[3], model_range_invasive[4])) +
+  labs(title = "b) Invasive habitat estimate", x = NULL, y = NULL) +
+  theme(plot.margin=grid::unit(c(0,0,0,0), "mm"), panel.background = element_rect(fill = "lightblue"))
+y_inv
+
+invasive_uncertainty <- as.data.frame(obj_invasive$spatialPredictions[4])
+summary(invasive_uncertainty)
+
+#uncertainty
+z_inv <-
+  ggplot(invasive_uncertainty) +
+  geom_tile(aes(s1, s2, fill = uncertaintyEst)) +
+  coord_sf() +
+  scale_fill_viridis_c(
+    limits = c(0, .075),
+    option = "magma",
+    begin = 0.12, end = 1, name = "95% Credible \ninterval width"
+  ) +
+  scale_x_continuous(expand = c(0, 0), limits = c(model_range_invasive[1], model_range_invasive[2])) +
+  scale_y_continuous(expand = c(0, 0), limits = c(model_range_invasive[3], model_range_invasive[4])) +
+  labs(title = "Invasive uncertainty", x = NULL, y = NULL) +
+  theme(plot.margin=grid::unit(c(0,0,2,0), "mm"), panel.background = element_rect(fill = "lightblue"))
+z_inv
+
+grid.arrange(x_inv, y_inv, z_inv, nrow = 3, padding = unit(0.2, "line"))
+
+# ### 3.2.2 Spatial effect map #########
+# invasive_spatial_effect <- as.data.frame(obj_invasive$spatialPredictions[7])
+# 
+# ggplot(invasive_spatial_effect, aes(s1, s2)) +
+#   geom_raster(aes(fill = meanSpatialPred)) +
+#   scale_fill_viridis_c(
+#     option = "magma",
+#     end = 0.9, name = "Spatial effect"
+#   ) +
+#   scale_x_continuous(expand = c(0, 0), limits = c(model_range_invasive[1], model_range_invasive[2])) +
+#   scale_y_continuous(expand = c(0, 0), limits = c(model_range_invasive[3], model_range_invasive[4])) +
+#   coord_sf() +
+#   labs(title = "Spatial effect in invasive range", x = NULL, y = NULL) +
+#   theme_bw()
+
+# ### 3.2.3 habitat estimate projected in native and invasive ranges  #########
+# predict_invasive_native <- predictSD(obj_invasive, climate_grid_native,
+#                                      origClimateData = climate_grid_invasive)
+# invasive_native_predicted_estimate <- as.data.frame(predict_invasive_native[1])
+# 
+# ggplot(invasive_native_predicted_estimate, aes(s1, s2)) +
+#   geom_tile(aes(fill = OccurrenceProb)) +
+#   coord_sf() +
+#   scale_fill_viridis_c(
+#     limits = c(0, 1), option = "magma",
+#     begin = 0.12, end = 1, name = "Suitability"
+#   ) +
+#   scale_x_continuous(expand = c(0, 0), limits = c(model_range_native[1], model_range_native[2])) +
+#   scale_y_continuous(expand = c(0, 0), limits = c(model_range_native[3], model_range_native[4])) +
+#   labs(title = "Invasive niche prediction in the native range", x = NULL, y = NULL) +
+#   theme_bw()
+# 
+# 
+# predict_invasive_invasive <- predictSD(obj_invasive, climate_grid_invasive,
+#                                        origClimateData = climate_grid_invasive)
+# invasive_invasive_predicted_estimate <- as.data.frame(predict_invasive_invasive[1])
+# 
+# ggplot(invasive_invasive_predicted_estimate, aes(s1, s2)) +
+#   geom_tile(aes(fill = OccurrenceProb)) +
+#   coord_sf() +
+#   scale_fill_viridis_c(
+#     limits = c(0, 1), option = "magma",
+#     begin = 0.12, end = 1, name = "Suitability"
+#   ) +
+#   scale_x_continuous(expand = c(0, 0), limits = c(model_range_invasive[1], model_range_invasive[2])) +
+#   scale_y_continuous(expand = c(0, 0), limits = c(model_range_invasive[3], model_range_invasive[4])) +
+#   labs(title = "Invasive niche prediction in the invasive range", x = NULL, y = NULL) +
+#   theme_bw()
 
 ### 3.2.4 Individual climate response curves ########
 # obj_invasive$responsePredictions contains each climate variable with the occurrence prediction (with upper and lower confidence interval) along the available climate gradient in the specified range
@@ -371,17 +483,6 @@ pars_invasive <- getPars(obj_invasive, climate_grid_invasive)
 # This function should be repeated for each climate variable
 map2(preds_invasive, clim_names, plot_response_curve)
 
-
-# Plot standardized individual response curves
-# This functions standardises the area under the curve to better show the change across the gradient regardless of effect size. As such disregard the actual response values
-integral_invasive_bio5 <- calculate_integral_response_curve(
-  climate_grid_invasive, "wc2.1_30s_bio_5",
-  preds_invasive$wc2.1_30s_bio_5$covarVal,
-  pars_invasive
-)
-
-plot_integral_response_curve(integral_invasive_bio5, "Name of the climate variable")
-
 ### 3.2.5 AUC ########
 observations_invasive <- occurence_grid_invasive$occurrence
 predictions_invasive <- obj_invasive$spatialPredictions$meanEst
@@ -390,200 +491,191 @@ sp_AUC_invasive <- auc(roc_object_invasive)
 
 # 4 Niche comparison ---------
 
-## 4.1 Univariate ==========
+## 4.1 Objects needed from other sections (section 1 must be run first) ==========
+obj_native <- readRDS(file = "Native_Model_output_file")
+preds_native <- obj_native$responsePredictions
+pars_native <- getPars(obj_native, climate_grid_native)
+
+obj_invasive <- readRDS(file = "Native_Model_output_file")
+preds_invasive <- obj_invasive$responsePredictions
+pars_invasive <- getPars(obj_invasive, climate_grid_invasive)
 
 
-compare_response_curves(
-  preds_native$wc2.1_30s_bio_1,
-  preds_invasive$wc2.1_30s_bio_1
-)
-map2(preds_native, preds_invasive, compare_response_curves)
+## 4.2 Niche overlap =============
 
-# Standardised curves
+### 4.2.1 Plot response curves =============
 
-compare_response_curves(integral_native_bio5, integral_invasive_bio5)
+# #Raw response curves
+Map(compare_response_curves, preds_native, preds_invasive, clim_names)
 
+### 4.2.2 Calculate standardised response curves =============
 
 
+# Integrated curves
+integrated_curves <- lapply(clim_codes, calcOverlap, obj_native, climate_grid_native, obj_invasive, climate_grid_invasive)
+names(integrated_curves) <- clim_codes
 
-# ## 4.2 Multivariate ===========
-# 
-# climate_background <- as.data.frame(climate_extended_prediction_range) |>
-#   select(-s1, -s2) |>
-#   rename(
-#     "Annual Mean Temperature" = wc2.1_30s_bio_1,
-#     "Mean Diurnal Range" = wc2.1_30s_bio_2,
-#     "Max Temperature of Warmest Month" = wc2.1_30s_bio_5,
-#     "Mean Temperature of Wettest Quarter" = wc2.1_30s_bio_8,
-#     "Mean Temperature of Driest Quarter" = wc2.1_30s_bio_9,
-#     "Mean Temperature of Warmest Quarter" = wc2.1_30s_bio_10,
-#     "Annual Precipitation" = wc2.1_30s_bio_12,
-#     "Precipitation of Wettest Month" = wc2.1_30s_bio_13,
-#     "Precipitation of Driest Month" = wc2.1_30s_bio_14,
-#     "Precipitation of Warmest Quarter" = wc2.1_30s_bio_18
-#   )
-# 
-# occurence_native_data_frame <- as.data.frame(occurence_grid_native)
-# 
-# # Data frame showing each climate variable at each point in the native area
-# native_data_frame <- as.data.frame(climate_grid_native) |>
-#   left_join(occurence_native_data_frame) |>
-#   select(-s1, -s2)
-# 
-# # Add predicted occurrence probability from the native model to extended climate area data frame
-# native_prediction_data_frame <- as.data.frame(climate_extended_prediction_range) |>
-#   left_join(native_predicted_estimate) |>
-#   select(-s1, -s2)
-# 
-# occurence_invasive_data_frame <- as.data.frame(occurence_grid_invasive)
-# 
-# # Data frame showing each climate variable at each point in the invasive area
-# invasive_data_frame <- as.data.frame(climate_grid_invasive) |>
-#   left_join(occurence_invasive_data_frame) |>
-#   select(-s1, -s2)
-# 
-# # Add predicted occurrence probability from the native model to extended climate area data frame
-# invasive_prediction_data_frame <- as.data.frame(climate_extended_prediction_range) |>
-#   left_join(invasive_predicted_estimate) |>
-#   select(-s1, -s2)
-# 
-# # Make a pca of the climate in the extended prediction area
-# pca.env <- dudi.pca(climate_background, scannf = F, nf = 2)
-# 
-# # Plots the contribution of each
-# ecospat.plot.contrib(contrib = pca.env$co, eigen = pca.env$eig)
-# 
-# ## Convert
-# # PCA scores for the whole study area
-# scores.globclim <- pca.env$li
-# # PCA scores for the species native distribution
-# scores.sp.nat <- suprow(pca.env, native_data_frame[which(native_data_frame[, 11] == 1), 1:10])$li
-# # PCA scores for the species invasive distribution
-# scores.sp.inv <- suprow(pca.env, invasive_data_frame[which(invasive_data_frame[, 11] == 1), 1:10])$li
-# # PCA scores for the whole native study area
-# scores.clim.nat <- suprow(pca.env, native_data_frame[, 1:10])$li
-# # PCA scores for the whole invaded study area
-# scores.clim.inv <- suprow(pca.env, invasive_data_frame[, 1:10])$li
-# # PCA scores for the occurrence prediction based on the native model
-# scores.pred.nat <- suprow(pca.env, native_prediction_data_frame[, 1:10])$li
-# # PCA scores for the occurrence prediction based on the invasive model
-# scores.pred.inv <- suprow(pca.env, invasive_prediction_data_frame[, 1:10])$li
-# 
-# # Assigns the occurrence probability from the native model to coordinates in the pca
-# clim_space_native <- bind_cols(scores.pred.nat, native_predicted_estimate) |>
-#   select(-s1, -s2)
-# # Assigns the occurrence probability from the invasive model to coordinates in the pca
-# clim_space_invasive <- bind_cols(scores.pred.inv, invasive_predicted_estimate) |>
-#   select(-s1, -s2)
-# 
-# 
-# # Gridding the native niche
-# grid.clim.nat <- ecospat.grid.clim.dyn(
-#   glob = scores.globclim,
-#   glob1 = scores.clim.nat,
-#   sp = scores.sp.nat, R = 100,
-#   th.sp = 0
-# )
-# 
-# # Gridding the invasive niche
-# grid.clim.inv <- ecospat.grid.clim.dyn(
-#   glob = scores.globclim,
-#   glob1 = scores.clim.inv,
-#   sp = scores.sp.inv, R = 100,
-#   th.sp = 0
-# )
-# 
-# 
-# # Plots the available climate and occurrences in the native and invasive ranges in a pca
-# ecospat.plot.niche.dyn(grid.clim.nat, grid.clim.inv,
-#   quant = 0.25, interest = 1,
-#   title = "Niche Overlap", name.axis1 = "PC1 = 40.85%",
-#   name.axis2 = "PC2 = 25.64%"
-# )
-# ecospat.shift.centroids(scores.sp.nat, scores.sp.inv, scores.clim.nat, scores.clim.inv)
-# 
-# # Save the coordinates of occurrence probabilities in the pca at several thresholds
-# # No threshold saves all points from the extended prediction area
-# coords_100 <- clim_space_native |>
-#   select(-OccurrenceProb) |>
-#   as.matrix()
-# 
-# coords_native_75 <- clim_space_native |>
-#   filter(OccurrenceProb > 0.25) |>
-#   select(-OccurrenceProb) |>
-#   as.matrix()
-# 
-# coords_native_50 <- clim_space_native |>
-#   filter(OccurrenceProb > 0.5) |>
-#   select(-OccurrenceProb) |>
-#   as.matrix()
-# 
-# coords_native_25 <- clim_space_native |>
-#   filter(OccurrenceProb > 0.75) |>
-#   select(-OccurrenceProb) |>
-#   as.matrix()
-# 
-# 
-# coords_invasive_75 <- clim_space_invasive |>
-#   filter(OccurrenceProb > 0.25) |>
-#   select(-OccurrenceProb) |>
-#   as.matrix()
-# 
-# coords_invasive_50 <- clim_space_invasive |>
-#   filter(OccurrenceProb > 0.5) |>
-#   select(-OccurrenceProb) |>
-#   as.matrix()
-# 
-# coords_invasive_25 <- clim_space_invasive |>
-#   filter(OccurrenceProb > 0.75) |>
-#   select(-OccurrenceProb) |>
-#   as.matrix()
-# 
-# # Make hulls
-# hull_100 <- inla.nonconvex.hull(coords_100, convex = -0.02, concave = -0.15, resolution = 300)
-# hull_native_75 <- inla.nonconvex.hull(coords_native_75, convex = -0.02, concave = -0.15, resolution = 300)
-# hull_native_50 <- inla.nonconvex.hull(coords_native_50, convex = -0.02, concave = -0.15, resolution = 300)
-# hull_native_25 <- inla.nonconvex.hull(coords_native_25, convex = -0.02, concave = -0.15, resolution = 300)
-# 
-# hull_invasive_75 <- inla.nonconvex.hull(coords_invasive_75, convex = -0.02, concave = -0.15, resolution = 300)
-# hull_invasive_50 <- inla.nonconvex.hull(coords_invasive_50, convex = -0.02, concave = -0.15, resolution = 300)
-# hull_invasive_25 <- inla.nonconvex.hull(coords_invasive_25, convex = -0.02, concave = -0.15, resolution = 300)
-# 
-# ecospat.plot.niche(grid.clim.nat)
-# lines(hull_100$loc, col = "red")
-# lines(hull_native_75$loc, col = "red")
-# lines(hull_native_50$loc, col = "red")
-# lines(hull_native_25$loc, col = "red")
-# # text() to ad values to the lines
-# # polygon() for fill
-# 
-# 
-# ecospat.plot.niche(grid.clim.inv)
-# lines(hull_invasive_75$loc, col = "blue")
-# 
-# plot(hull_100$loc,
-#   type = "lines",
-#   xlab = "PC1 = 40.85%", ylab = "PC2 = 25.64%", main = "Predicted niches in climate space"
-# )
-# polygon(hull_invasive_75$loc, col = adjustcolor("blue", alpha.f = 0.1))
-# polygon(hull_invasive_50$loc, col = adjustcolor("blue", alpha.f = 0.3))
-# polygon(hull_invasive_25$loc, col = adjustcolor("blue", alpha.f = 0.5))
-# polygon(hull_native_75$loc, col = adjustcolor("red", alpha.f = 0.1))
-# polygon(hull_native_50$loc, col = adjustcolor("red", alpha.f = 0.3))
-# polygon(hull_native_25$loc, col = adjustcolor("red", alpha.f = 0.5))
-# points(scores.sp.inv, cex = 0.7, pch = 2, col = "red")
-# points(scores.sp.nat, cex = 0.7, pch = 1, col = "blue")
-# # look at legend()
-# 
-# 
-# 
-# ## 4.3 Overlap index =============
-# A <- raster::raster(predict_invasive)
-# B <- raster::raster(predict_native)
-# 
-# isocat::schoenersD(A / raster::cellStats(A, stat = "sum"), B / raster::cellStats(B, stat = "sum"))
-# 
-# a <- rast(predict_invasive)
-# b <- rast(predict_native)
-# 
-# spatialEco::overlap(a, b)
+
+### 4.2.3 Calculate niche overlap =============
+# Overlap per climate variable
+all_overlaps <- vapply(integrated_curves, function(x) x$overlap, FUN.VALUE = 1.0)
+# Mean overlap
+niche_overlap <- mean(all_overlaps)
+niche_overlap
+niche_sd <- sd(all_overlaps)
+niche_sd
+
+### 4.2.3 Occurrences across climate gradients =============
+
+spatrast_climate_grid_native <- rast(climate_grid_native)
+spatrast_occurence_grid_native <- rast(occurence_grid_native)
+
+spatrast_climate_and_occurrence_native <- c(spatrast_climate_grid_native,spatrast_occurence_grid_native)
+
+values_climate_and_occurrences_native <- terra::values(spatrast_climate_and_occurrence_native)
+# str(j)
+# head(j)
+# table(j[ ,"occurrence"])
+
+values_climate_at_occurrences_native <- 
+  values_climate_and_occurrences_native[values_climate_and_occurrences_native[ ,"occurrence"] > 0.5, ] 
+
+df_climate_at_occurrences_native <- as.data.frame(values_climate_at_occurrences_native)
+summary(df_climate_at_occurrences_native)
+climate_at_occurrences_native <- na.omit(df_climate_at_occurrences_native)
+summary(climate_at_occurrences_native)
+
+
+spatrast_climate_grid_invasive <- rast(climate_grid_invasive)
+spatrast_occurence_grid_invasive <- rast(occurence_grid_invasive)
+
+spatrast_climate_and_occurrence_invasive <- c(spatrast_climate_grid_invasive,spatrast_occurence_grid_invasive)
+
+values_climate_and_occurrences_invasive <- terra::values(spatrast_climate_and_occurrence_invasive)
+# str(j)
+# head(j)
+# table(j[ ,"occurrence"])
+
+values_climate_at_occurrences_invasive <- 
+  values_climate_and_occurrences_invasive[values_climate_and_occurrences_invasive[ ,"occurrence"] > 0.5, ] 
+
+df_climate_at_occurrences_invasive <- as.data.frame(values_climate_at_occurrences_invasive)
+summary(df_climate_at_occurrences_invasive)
+climate_at_occurrences_invasive <- na.omit(df_climate_at_occurrences_invasive)
+summary(climate_at_occurrences_invasive)
+
+
+
+
+### 4.2.4 Plot standardised climate response curves (with occurrences) =============
+library(vioplot)
+# Plot overlap curves manually
+
+# Uncomment the next 2 lines and the line with the function dev.off() to save plot as a png
+# png(file= paste0(here(), "/", "new_bio12", ".png"),
+# width=730, height=460)
+
+par(mfrow=c(2,1), mai = c(0, 1.3, 0.2, 1), cex = 1.4)
+
+
+response_curve_native <- with(integrated_curves$wc2.1_30s_bio_12$native,
+                              respCurve(xSeq, datSel, pars, clim_codes[7], integral))
+response_curve_invasive <- with(integrated_curves$wc2.1_30s_bio_12$invasive,
+                                respCurve(xSeq, datSel, pars, clim_codes[7], integral))
+
+with(integrated_curves$wc2.1_30s_bio_12$invasive,
+     plot(xSeq, response_curve_invasive,
+          xlim = range(c(xSeq, integrated_curves$wc2.1_30s_bio_12$native$xSeq)), col = "red", 
+          ylim = c(0, max(c(response_curve_native, response_curve_invasive))),
+          type = "l", xlab = "",
+          ylab = "",
+          axes = FALSE))
+
+with(integrated_curves$wc2.1_30s_bio_12$native, lines(xSeq, response_curve_native, col = "blue"))
+abline(v = integrated_curves$wc2.1_30s_bio_12$cRange, lwd = 2, lty = 2)
+legend("top", paste0("Overlap = ", round(all_overlaps[7], digits = 3)), bty = "o")
+box()
+axis(2, las = 1)
+axis(2, at = mean(par("usr")[3:4]), labels = "Occurrence density", tick = FALSE, line = 2.5)
+
+
+par(mai = c(1.3, 1.3, 0.1, 1))
+
+vioplot(wc2.1_30s_bio_12~occurrence, data = climate_at_occurrences_native,
+        side = "right", horizontal = TRUE, col = "blue",
+        ylim = range(c(integrated_curves$wc2.1_30s_bio_12$invasive$xSeq,
+                       integrated_curves$wc2.1_30s_bio_12$native$xSeq)),
+        ylab = "", xlab = clim_names[7], xaxt = "n")
+
+abline(h = 1, lwd = 2, lty = 2)
+
+vioplot(wc2.1_30s_bio_12~occurrence, data = climate_at_occurrences_invasive,
+        side = "left", horizontal = TRUE, col = "red", add = TRUE)
+
+# dev.off()
+
+
+
+# Single curve
+niche_overlap_plot(integrated_curves$wc2.1_2.5m_bio_5, clim_codes[1], clim_names[1], climate_at_occurrences_native, climate_at_occurrences_invasive, "test", all_overlaps[1])
+
+
+# All curves
+Map(niche_overlap_plot, integrated_curves, clim_codes, clim_names, list(climate_at_occurrences_native), list(climate_at_occurrences_invasive), "Dataset_name", all_overlaps)
+
+
+
+## 4.3  Climate/ Spatial effect contribution ==========
+calcVariancePartitioning(obj_native)
+
+calcVariancePartitioning(obj_invasive)
+
+## 4.4 Shared climate coverage ===========
+# shared climate range
+clim_range_shared <- max(integrated_curves$BO2_curvelmax_bdmean$cRange) -
+  min(integrated_curves$BO2_curvelmax_bdmean$cRange)
+
+# total climate range
+clim_range_total <- max(c(integrated_curves$BO2_curvelmax_bdmean$invasive$xSeq,
+                          integrated_curves$BO2_curvelmax_bdmean$native$xSeq)) -
+  min(c(integrated_curves$BO2_curvelmax_bdmean$invasive$xSeq,
+        integrated_curves$BO2_curvelmax_bdmean$native$xSeq))
+
+#Proportion
+clim_shared_proportion <- clim_range_shared/clim_range_total
+clim_shared_proportion
+
+
+calculate_shared_climate_coverage(integrated_curves$BO2_curvelmax_bdmean)
+
+all_climate_coverage <- Map(calculate_shared_climate_coverage, integrated_curves)
+all_climate_coverage
+mean(as.numeric(all_climate_coverage))
+sd(as.numeric(all_climate_coverage))
+
+
+## 4.5 Prevalence ===========
+# Needs to run section 4.3
+
+# Prevalence in native model
+native_occurence_na_rm <- na.omit(native_occurences)
+prevalence_native <- sum(native_occurence_na_rm == 1)/ sum(native_occurence_na_rm == 0)
+prevalence_native
+
+# Prevalence in invasive model
+invasive_occurences <- replace(occurence_grid_invasive$occurrence, is.na(invasive_fundamental_estimate), NA)
+
+invasive_occurence_na_rm <- na.omit(invasive_occurences)
+prevalence_invasive <- sum(invasive_occurence_na_rm == 1)/ sum(invasive_occurence_na_rm == 0)
+prevalence_invasive
+
+## 4.6 Uncertainty ======
+native_uncertainty <- as.data.frame(obj_native$spatialPredictions[4])
+summary(native_uncertainty)
+mean(native_uncertainty$uncertaintyEst)
+sd(native_uncertainty$uncertaintyEst)
+
+invasive_uncertainty <- as.data.frame(obj_invasive$spatialPredictions[4])
+summary(invasive_uncertainty)
+mean(invasive_uncertainty$uncertaintyEst)
+sd(invasive_uncertainty$uncertaintyEst)
