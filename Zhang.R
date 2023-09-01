@@ -353,6 +353,13 @@ preds_native <- obj_native$responsePredictions
 # The function is available in the Joe_functions.R file.
 pars_native <- getPars(obj_native, climate_grid_native)
 
+ggplot(preds_native$wc2.1_2.5m_elev, aes(covarVal, meanEst))+
+  geom_line(linewidth = 0.6, col = "blue")+
+  geom_line(aes(covarVal, lowerEst), linetype = "dashed")+
+  geom_line(aes(covarVal, upperEst), linetype = "dashed")+
+  ylim(0, .01)+
+  labs(y = "Probability of occurence", x = "elevation", title = "Native model")+
+  theme_bw()
 
 # WARNING! The name after "preds_native$" will change depending on the original climate data,
 # make sure to check preds_native beforehand.
@@ -605,27 +612,28 @@ library(vioplot)
 # Plot overlap curves manually
 
 # Uncomment the next 2 lines and the line with the function dev.off() to save plot as a png
-# png(file= paste0(here(), "/", "test", ".png"),
-#     width=730, height=460)
+# png(file= paste0(here(), "/", "new_bio12", ".png"),
+# width=730, height=460)
 
-par(mfrow=c(2,1), mai = c(0, 1.3, 0.2, 1), cex = 1)
+par(mfrow=c(2,1), mai = c(0, 1.3, 0.2, 1), cex = 1.4)
 
-response_curve_native <- with(integrated_curves$wc2.1_2.5m_bio_17$native,
-                              respCurve(xSeq, datSel, pars, clim_codes[10], integral))
-response_curve_invasive <- with(integrated_curves$wc2.1_2.5m_bio_17$invasive,
-                                respCurve(xSeq, datSel, pars, clim_codes[10], integral))
 
-with(integrated_curves$wc2.1_2.5m_bio_17$invasive,
+response_curve_native <- with(integrated_curves$wc2.1_30s_bio_12$native,
+                              respCurve(xSeq, datSel, pars, clim_codes[7], integral))
+response_curve_invasive <- with(integrated_curves$wc2.1_30s_bio_12$invasive,
+                                respCurve(xSeq, datSel, pars, clim_codes[7], integral))
+
+with(integrated_curves$wc2.1_30s_bio_12$invasive,
      plot(xSeq, response_curve_invasive,
-          xlim = range(c(xSeq, integrated_curves$wc2.1_2.5m_bio_17$native$xSeq)), col = "red", 
+          xlim = range(c(xSeq, integrated_curves$wc2.1_30s_bio_12$native$xSeq)), col = "red", 
           ylim = c(0, max(c(response_curve_native, response_curve_invasive))),
           type = "l", xlab = "",
           ylab = "",
           axes = FALSE))
 
-with(integrated_curves$wc2.1_2.5m_bio_17$native, lines(xSeq, response_curve_native, col = "blue"))
-abline(v = integrated_curves$wc2.1_2.5m_bio_17$cRange, lwd = 2, lty = 2)
-legend("topleft", c("Native", "Invasive"), fill = c("blue","red"), bty = "o")
+with(integrated_curves$wc2.1_30s_bio_12$native, lines(xSeq, response_curve_native, col = "blue"))
+abline(v = integrated_curves$wc2.1_30s_bio_12$cRange, lwd = 2, lty = 2)
+legend("top", paste0("Overlap = ", round(all_overlaps[7], digits = 3)), bty = "o")
 box()
 axis(2, las = 1)
 axis(2, at = mean(par("usr")[3:4]), labels = "Occurrence density", tick = FALSE, line = 2.5)
@@ -633,15 +641,15 @@ axis(2, at = mean(par("usr")[3:4]), labels = "Occurrence density", tick = FALSE,
 
 par(mai = c(1.3, 1.3, 0.1, 1))
 
-vioplot(wc2.1_2.5m_bio_17~occurrence, data = climate_at_occurrences_native,
+vioplot(wc2.1_30s_bio_12~occurrence, data = climate_at_occurrences_native,
         side = "right", horizontal = TRUE, col = "blue",
-        ylim = range(c(integrated_curves$wc2.1_2.5m_bio_17$invasive$xSeq,
-                       integrated_curves$wc2.1_2.5m_bio_17$native$xSeq)),
-        ylab = "", xlab = clim_names[10], xaxt = "n")
+        ylim = range(c(integrated_curves$wc2.1_30s_bio_12$invasive$xSeq,
+                       integrated_curves$wc2.1_30s_bio_12$native$xSeq)),
+        ylab = "", xlab = clim_names[7], xaxt = "n")
 
 abline(h = 1, lwd = 2, lty = 2)
 
-vioplot(wc2.1_2.5m_bio_17~occurrence, data = climate_at_occurrences_invasive,
+vioplot(wc2.1_30s_bio_12~occurrence, data = climate_at_occurrences_invasive,
         side = "left", horizontal = TRUE, col = "red", add = TRUE)
 
 # dev.off()

@@ -1,4 +1,4 @@
-## response_curves
+# # response_curves
 # # data simulation
 # set.seed(10)
 # n_root <- 50
@@ -14,14 +14,15 @@
 # 
 # clim1 <- rnorm(n, 8)
 # clim2 <- rnorm(n, 1)
-# occ2 <- rbinom(n, 1, invLogit(-13 + 1 * clim1 - 1.5 * clim2))
+# occ2 <- rbinom(n, 1, invLogit(-13 + 1 * clim1 - 1.5 * clim2)) #-13 + 1*x - 1.5*y
 # dat2 <- data.frame(coors, clim1, clim2, occ2)
 # coordinates(dat2) = c("Var1", "Var2")
 # gridded(dat2) <- TRUE
 # dat2 <- as(dat2, "SpatialGridDataFrame")
 # 
-# # model running
+# # # model running
 # mod1 <- sdmINLASpatRandEff(dat1[3], dat1[1:2], meshParameters = list(max.n.strict = -1), createGeoTIFF = FALSE, outFolder = getwd(), myName = "Species_occ1_ModelPredictions")
+# 
 # mod2 <- sdmINLASpatRandEff(dat2[3], dat2[1:2], meshParameters = list(max.n.strict = -1), createGeoTIFF = FALSE, outFolder = getwd(), myName = "Species_occ2_ModelPredictions")
 # 
 # modRDS1 <- readRDS(file = "Species_occ1_ModelPredictions.rds")
@@ -31,6 +32,10 @@
 # preds_2 <- modRDS2$responsePredictions
 # 
 # plot_response_curve(preds_1$clim1, "climate variable 1")
+# plot_response_curve(preds_2$clim1, "climate variable 1")
+# 
+# plot_response_curve(preds_1$clim2, "climate variable 2")
+# plot_response_curve(preds_2$clim2, "climate variable 2")
 # 
 # ggplot(preds_1$clim1, aes(covarVal, meanEst))+
 #   geom_line(linewidth = 0.6, col = "blue")+
@@ -39,14 +44,35 @@
 #   # ylim(y_limit)+
 #   labs(y = "Probability of occurence", x = "climate variable 1", title = "Native model")+
 #   theme_bw()
-# plot_response_curve(preds_2$clim2, "climate variable 1")
+# 
+# plot_response_curve(preds_2$clim1, "climate variable 1")
 # ggplot(preds_2$clim1, aes(covarVal, meanEst))+
 #   geom_line(linewidth = 0.6, col = "red")+
 #   geom_line(aes(covarVal, lowerEst), linetype = "dashed")+
 #   geom_line(aes(covarVal, upperEst), linetype = "dashed")+
-#   ylim(c(0, 1))+
+#   ylim(c(0, .1))+
 #   labs(y = "Probability of occurence", x = "climate variable 1", title = "Invasive model")+
 #   theme_bw()
+# 
+# ggplot(preds_1$clim2, aes(covarVal, meanEst))+
+#   geom_line(linewidth = 0.6, col = "blue")+
+#   geom_line(aes(covarVal, lowerEst), linetype = "dashed")+
+#   geom_line(aes(covarVal, upperEst), linetype = "dashed")+
+#   # ylim(y_limit)+
+#   labs(y = "Probability of occurence", x = "climate variable 2", title = "Native model")+
+#   theme_bw()
+# 
+# # plot_response_curve(preds_2$clim2, "climate variable 1")
+# ggplot(preds_2$clim2, aes(covarVal, meanEst))+
+#   geom_line(linewidth = 0.6, col = "red")+
+#   geom_line(aes(covarVal, lowerEst), linetype = "dashed")+
+#   geom_line(aes(covarVal, upperEst), linetype = "dashed")+
+#   ylim(c(0, 1))+
+#   labs(y = "Probability of occurence", x = "climate variable 2", title = "Invasive model")+
+#   theme_bw()
+
+
+
 
 # functions
 invLogit <- function(x) exp(x)/(1+ exp(x))
@@ -93,9 +119,9 @@ calcOverlap <- function(climVar, modRDS1, climDat1, modRDS2, climDat2){
 # with(overClim1$invasive, lines(xSeq, respCurve(xSeq, datSel, pars, "clim1", integral), col = "red"))
 # abline(v = overClim1$cRange, lwd = 2, lty = 2)
 # 
-# with(overClim2$native, plot(xSeq, respCurve(xSeq, datSel, pars, "clim2", integral), type = "l",
+# with(overClim2$native, plot(xSeq, respCurve(xSeq, datSel, pars, "clim2", integral), type = "l", col = "blue",
 #   xlab = "clim2", ylab = "Occurrence density"))
-# with(overClim2$invasive, lines(xSeq, respCurve(xSeq, datSel, pars, "clim2", integral), col = "blue"))
+# with(overClim2$invasive, lines(xSeq, respCurve(xSeq, datSel, pars, "clim2", integral), col = "red"))
 # abline(v = overClim2$cRange, lwd = 2, lty = 2)
 # 
 # # all variables
